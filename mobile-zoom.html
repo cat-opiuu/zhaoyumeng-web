@@ -12,8 +12,8 @@
 -->
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{height:100%}
-  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#111827;color:#e5e7eb;display:flex;flex-direction:column;padding:14px 14px 24px}
+  html{height:100%}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#111827;color:#e5e7eb;display:flex;flex-direction:column;min-height:100%;padding:14px 14px 24px}
 
   .zym_head{max-width:560px;width:100%;margin:0 auto}
   .zym_head .zym_badge{display:inline-block;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);font-size:12px;letter-spacing:2px;margin-bottom:8px}
@@ -27,6 +27,7 @@
     position:relative;width:100%;max-width:560px;height:62vh;margin:14px auto 0;
     border-radius:16px;overflow:hidden;background:#1f2937;
     touch-action:none;user-select:none;-webkit-user-select:none;
+    flex-shrink:0;   /* 禁止 flex 收缩：加了视频区块后内容超出视口，防止查看器被压成 0 高度 */
     box-shadow:0 14px 30px rgba(0,0,0,.4);
   }
   .zym_box img{
