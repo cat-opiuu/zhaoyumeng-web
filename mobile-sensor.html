@@ -12,9 +12,9 @@
 -->
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{height:100%}
-  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#111827;color:#e5e7eb;display:flex;flex-direction:column;align-items:center;padding:36px 20px 40px}
-  .zym_wrap{width:100%;max-width:480px}
+  html{height:100%}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#111827;color:#e5e7eb;display:flex;flex-direction:column;align-items:center;min-height:100%;padding:36px 20px 40px}
+  .zym_wrap{width:100%;max-width:480px;flex-shrink:0}  /* 禁止 flex 收缩：加视频区块后内容超出视口，防止内容被压扁 */
 
   .zym_badge{display:inline-block;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);font-size:12px;letter-spacing:2px;margin-bottom:10px}
   h1{font-size:21px;letter-spacing:1px}
@@ -59,6 +59,10 @@
   .zym_back{text-align:center;margin-top:22px}
   .zym_back a{display:inline-block;text-decoration:none;color:#e5e7eb;font-size:14px;font-weight:bold;background:#1f2937;border:1px solid #374151;border-radius:999px;padding:9px 22px}
   .zym_back a:hover{border-color:#6b7280}
+  /* 实机演示视频区 */
+  .zym_video{margin-top:26px;text-align:center}
+  .zym_video h3{font-size:14px;color:#e5e7eb;letter-spacing:1px;margin-bottom:8px}
+  .zym_video video{display:block;width:100%;border-radius:14px;border:1px solid #374151;box-shadow:0 12px 26px rgba(0,0,0,.4);background:#000}
 </style>
 </head>
 <body>
@@ -89,6 +93,11 @@
     ② <b>iOS（13+）出于隐私要求必须用户手动授权</b>（DeviceMotionEvent.requestPermission），且必须由用户点击触发，用户拒绝后同样拿不到数据；<br>
     ③ 部分安卓 WebView、旧浏览器甚至<b>根本不实现</b>该事件；<br>
     ④ 所以必须检测"事件不来/数据为空"，自动换成点击按钮——<b>功能对谁都能用，演示永不冷场</b>。
+  </div>
+
+  <div class="zym_video">
+    <h3>📱 手机实机演示视频</h3>
+    <video src="video/zym_sensor_demo.mp4" controls playsinline preload="metadata"></video>
   </div>
 
   <div class="zym_back"><a href="index.html">返回首页</a></div>
