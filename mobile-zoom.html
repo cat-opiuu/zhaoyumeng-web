@@ -38,6 +38,10 @@
 
   .zym_info{max-width:560px;width:100%;margin:12px auto 0;display:flex;justify-content:space-between;font-size:13px;color:#9ca3af}
   .zym_info b{color:#e5e7eb}
+  /* 实机演示视频区 */
+  .zym_video{max-width:560px;width:100%;margin:20px auto 0}
+  .zym_video h3{font-size:14px;color:#e5e7eb;letter-spacing:1px;margin-bottom:8px}
+  .zym_video video{display:block;width:100%;border-radius:14px;border:1px solid #374151;box-shadow:0 12px 26px rgba(0,0,0,.4);background:#000}
   .zym_back{text-align:center;margin-top:18px}
   .zym_back a{display:inline-block;text-decoration:none;color:#e5e7eb;font-size:14px;font-weight:bold;background:#1f2937;border:1px solid #374151;border-radius:999px;padding:9px 22px}
   .zym_back a:hover{border-color:#6b7280}
@@ -57,6 +61,11 @@
 <div class="zym_info">
   <span>当前缩放：<b id="zym_scaleTxt">1.0x</b></span>
   <span>双指捏合 / 单指拖动 / 双击切换</span>
+</div>
+
+<div class="zym_video">
+  <h3>📱 手机实机演示视频</h3>
+  <video src="video/zym_zoom_demo.mp4" controls playsinline preload="metadata"></video>
 </div>
 
 <div class="zym_back"><a href="index.html">返回首页</a></div>

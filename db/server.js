@@ -25,6 +25,7 @@ function zym_getMime(zym_ext) {
     ".gif": "image/gif",
     ".svg": "image/svg+xml",
     ".ico": "image/x-icon",
+    ".mp4": "video/mp4",
   };
   return zym_map[zym_ext] || "application/octet-stream";
 }
