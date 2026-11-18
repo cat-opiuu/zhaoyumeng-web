@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>移动端应用任务 · 任务二 / 三 / 四 入口</title>
+<!--
+  作者：赵予萌　学号：219
+  建立时间：2026-11-18 00:00:00
+  使用大模型：GLM-5.3-Flash
+  功能名称：移动端应用任务入口页（汇总任务二手势切换、任务三双指缩放、任务四摇一摇抽菜谱）
+-->
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#111827;color:#e5e7eb;padding:40px 20px 50px}
+  .zym_wrap{max-width:560px;margin:0 auto}
+  .zym_head{text-align:center;margin-bottom:26px}
+  .zym_badge{display:inline-block;padding:4px 14px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);font-size:12px;letter-spacing:2px;margin-bottom:10px}
+  .zym_head h1{font-size:22px;letter-spacing:1px}
+  .zym_head p{margin-top:8px;font-size:13px;color:#9ca3af;line-height:1.9}
+
+  /* 任务入口卡片 */
+  .zym_card{
+    display:flex;align-items:center;gap:16px;text-decoration:none;
+    background:#1f2937;border:1px solid #374151;border-radius:16px;
+    padding:20px 22px;margin-bottom:14px;
+    transition:transform .2s,box-shadow .2s,border-color .2s;
+  }
+  .zym_card:hover{transform:translateY(-3px);border-color:#6b7280;box-shadow:0 12px 24px rgba(0,0,0,.4)}
+  .zym_no{
+    flex:none;width:52px;height:52px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:bold;color:#fff;
+  }
+  .zym_card b{display:block;font-size:17px;color:#fff;letter-spacing:1px}
+  .zym_card span{display:block;margin-top:5px;font-size:12.5px;color:#9ca3af;line-height:1.8}
+
+  .zym_back{text-align:center;margin-top:26px}
+  .zym_back a{display:inline-block;text-decoration:none;color:#e5e7eb;font-size:14px;font-weight:bold;background:#1f2937;border:1px solid #374151;border-radius:999px;padding:9px 22px;margin:0 5px}
+  .zym_back a:hover{border-color:#6b7280}
+</style>
+</head>
+<body>
+<div class="zym_wrap">
+  <div class="zym_head">
+    <span class="zym_badge">M O B I L E · 移 动 端 应 用</span>
+    <h1>📱 移动端应用任务</h1>
+    <p>三个移动端综合任务：手势切换、双指缩放、摇一摇传感器。建议用手机体验，电脑端也可演示。</p>
+  </div>
+
+  <a class="zym_card" href="mobile-gesture.html">
+    <span class="zym_no" style="background:linear-gradient(135deg,#f97316,#ef4444)">二</span>
+    <div>
+      <b>👋 任务二 · 移动端手势切换</b>
+      <span>touchstart/touchend 左右滑动切换 4 道菜卡片：40px 阈值、边界提示、touch-action:pan-y 纵向可滚、300ms 冷却防连滑。</span>
+    </div>
+  </a>
+
+  <a class="zym_card" href="mobile-zoom.html">
+    <span class="zym_no" style="background:linear-gradient(135deg,#3b82f6,#1d5bbf)">三</span>
+    <div>
+      <b>🔍 任务三 · 双指缩放图片查看器</b>
+      <span>双指捏合 1~4 倍缩放、两指中点锚定"缩放不跳"、单指拖动边界回弹、双击 1x/2x 切换（0.25s 过渡）。</span>
+    </div>
+  </a>
+
+  <a class="zym_card" href="mobile-sensor.html">
+    <span class="zym_no" style="background:linear-gradient(135deg,#facc15,#f59e0b)">四</span>
+    <div>
+      <b>🍚 任务四 · 摇一摇抽今日菜谱</b>
+      <span>devicemotion 合成加速度超 18 判定摇动、1.5s 冷却防重复触发，不支持时自动降级为"点我抽一次"按钮。</span>
+    </div>
+  </a>
+
+  <div class="zym_back">
+    <a href="index.html">返回首页</a>
+  </div>
+</div>
+</body>
+</html>
