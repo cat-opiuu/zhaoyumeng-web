@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>移动端传感器 · 摇一摇抽今日菜谱</title>
+<!--
+  作者：赵予萌　学号：219
+  建立时间：2026-11-18 00:00:00
+  使用大模型：GLM-5.3-Flash
+  功能名称：摇一摇抽菜谱（devicemotion 加速度阈值检测 + 1.5s 冷却 + 不支持时按钮降级）
+-->
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#111827;color:#e5e7eb;display:flex;flex-direction:column;align-items:center;padding:36px 20px 40px}
+  .zym_wrap{width:100%;max-width:480px}
+
+  .zym_badge{display:inline-block;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);font-size:12px;letter-spacing:2px;margin-bottom:10px}
+  h1{font-size:21px;letter-spacing:1px}
+  /* 需求①：操作提示 */
+  .zym_tip{margin-top:10px;font-size:14px;color:#fbbf24;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.35);border-radius:12px;padding:10px 14px;line-height:1.9;text-align:center}
+  .zym_state{margin-top:10px;text-align:center;font-size:12.5px;color:#9ca3af;min-height:18px}
+  /* 实时加速度读数：摇动时数字跳动=传感器通了；一直 9.8=事件被浏览器屏蔽 */
+  .zym_live{margin-top:6px;text-align:center;font-size:12px;color:#6ee7b7;font-family:Consolas,monospace;min-height:18px}
+
+  /* 需求①④：结果展示区（弹出动画作用在这张卡上） */
+  .zym_result{
+    margin-top:22px;background:#1f2937;border:1px solid #374151;border-radius:20px;
+    padding:30px 24px;text-align:center;box-shadow:0 14px 30px rgba(0,0,0,.4);
+  }
+  .zym_result .zym_emoji{font-size:56px;line-height:1}
+  .zym_result .zym_label{margin-top:12px;font-size:12.5px;color:#9ca3af;letter-spacing:2px}
+  .zym_result .zym_name{margin-top:6px;font-size:26px;color:#fff;letter-spacing:2px}
+  .zym_result .zym_name::before{content:"《"}
+  .zym_result .zym_name::after{content:"》"}
+  .zym_result .zym_desc{margin-top:10px;font-size:13.5px;color:#cbd5e1;line-height:2}
+  /* 弹出动画：缩放 0.5 → 1.15 → 1，同时淡入 */
+  @keyframes zymPop{
+    0%{transform:scale(.5);opacity:0}
+    60%{transform:scale(1.15);opacity:1}
+    100%{transform:scale(1);opacity:1}
+  }
+  .zym_pop{animation:zymPop .45s cubic-bezier(.34,1.56,.64,1)}
+
+  /* 需求⑤：降级按钮（默认隐藏，检测失败后显示） */
+  .zym_btn{
+    display:none;margin:22px auto 0;padding:12px 34px;font-size:15px;font-weight:bold;
+    color:#fff;background:linear-gradient(135deg,#f97316,#ef4444);border:none;border-radius:999px;
+    cursor:pointer;letter-spacing:2px;box-shadow:0 8px 20px rgba(239,68,68,.35);
+  }
+  .zym_btn.zym_show{display:inline-block}
+  .zym_btn:active{transform:scale(.95)}
+
+  /* 答辩说明卡（需求⑥） */
+  .zym_note{margin-top:26px;background:#f8faff;border:1px solid #dbe4ff;border-radius:14px;padding:14px 16px;font-size:13px;color:#334155;line-height:2}
+  .zym_note b{color:#0f2b5b}
+
+  .zym_back{text-align:center;margin-top:22px}
+  .zym_back a{display:inline-block;text-decoration:none;color:#e5e7eb;font-size:14px;font-weight:bold;background:#1f2937;border:1px solid #374151;border-radius:999px;padding:9px 22px}
+  .zym_back a:hover{border-color:#6b7280}
+</style>
+</head>
+<body>
+<div class="zym_wrap">
+  <div style="text-align:center">
+    <span class="zym_badge">S E N S O R · 摇 一 摇</span>
+  </div>
+  <h1 style="text-align:center">🍚 摇一摇 · 今日菜谱抽取</h1>
+
+  <p class="zym_tip">摇一摇手机，抽今日菜谱 🎲</p>
+  <p class="zym_state" id="zym_state">正在检测加速度传感器……</p>
+  <p class="zym_live" id="zym_live">实时加速度：—</p>
+
+  <!-- 结果卡片：抽中后整卡重放弹出动画 -->
+  <div class="zym_result" id="zym_result">
+    <div class="zym_emoji" id="zym_emoji">🍽️</div>
+    <p class="zym_label">今日菜谱</p>
+    <p class="zym_name" id="zym_name">摇一摇揭晓</p>
+    <p class="zym_desc" id="zym_desc">拿起手机摇一摇，随机为你抽一道菜</p>
+  </div>
+
+  <!-- 降级按钮：传感器不可用时显示 -->
+  <button class="zym_btn" id="zym_btn">👆 点我抽一次</button>
+
+  <div class="zym_note">
+    <b>为什么必须做降级？（答辩说明）</b><br>
+    ① devicemotion 依赖加速度传感器：<b>电脑、平板普遍没有手机那样的加速度计</b>，事件永远不会触发，页面就成"死页"；<br>
+    ② <b>iOS（13+）出于隐私要求必须用户手动授权</b>（DeviceMotionEvent.requestPermission），且必须由用户点击触发，用户拒绝后同样拿不到数据；<br>
+    ③ 部分安卓 WebView、旧浏览器甚至<b>根本不实现</b>该事件；<br>
+    ④ 所以必须检测"事件不来/数据为空"，自动换成点击按钮——<b>功能对谁都能用，演示永不冷场</b>。
+  </div>
+
+  <div class="zym_back"><a href="index.html">返回首页</a></div>
+</div>
+
+<script>
+// 功能：初始化摇一摇模块——devicemotion 加速度检测、阈值判定、冷却控制与降级兜底
+(function () {
+  var zym_state  = document.getElementById("zym_state");
+  var zym_live   = document.getElementById("zym_live");   // 实时加速度读数
+  var zym_result = document.getElementById("zym_result");
+  var zym_emoji  = document.getElementById("zym_emoji");
+  var zym_name   = document.getElementById("zym_name");
+  var zym_desc   = document.getElementById("zym_desc");
+  var zym_btn    = document.getElementById("zym_btn");
+
+  // 菜谱库：随机抽取的候选菜（emoji + 菜名 + 一句话简介）
+  var zym_dishes = [
+    { e: "🍗", n: "宫保鸡丁",   d: "川菜经典，酸甜微辣配酥脆花生" },
+    { e: "🌶️", n: "麻婆豆腐",   d: "麻辣鲜香烫，豆腐嫩而不碎" },
+    { e: "🍖", n: "东坡肉",     d: "慢火四小时，皮薄肉酥肥而不腻" },
+    { e: "🦐", n: "白灼基围虾", d: "粤菜本味，鲜甜弹牙蘸豉油" },
+    { e: "🐟", n: "清蒸鲈鱼",   d: "八分钟旺火足汽，淋热油激出葱香" },
+    { e: "🍜", n: "兰州牛肉面", d: "一清二白三红四绿五黄" },
+    { e: "🥘", n: "佛跳墙",     d: "坛启荤香飘四邻，佛闻弃禅跳墙来" },
+    { e: "🍚", n: "煲仔饭",     d: "腊味油脂渗入米粒，锅巴金黄焦香" },
+  ];
+
+  var zym_lastShake = 0;    // 上一次成功触发摇动的时间戳（冷却用）
+  var zym_sensorOk  = false; // 是否收到过有效的传感器数据
+
+  // 功能：随机抽一道菜并展示——整卡重放弹出动画（需求④）
+  function zym_draw() {
+    var zym_d = zym_dishes[Math.floor(Math.random() * zym_dishes.length)];
+    zym_emoji.textContent = zym_d.e;
+    zym_name.textContent  = zym_d.n;
+    zym_desc.textContent  = zym_d.d;
+    // 先移除动画类 → 强制回流 → 再加回，让同一元素能重复触发 keyframes
+    zym_result.classList.remove("zym_pop");
+    void zym_result.offsetWidth;
+    zym_result.classList.add("zym_pop");
+  }
+
+  // 功能：进入降级模式——显示"当前设备不支持"提示与"点我抽一次"按钮（需求⑤）
+  function zym_fallback() {
+    zym_state.textContent = "当前设备不支持，请用手机打开";
+    zym_btn.classList.add("zym_show");
+  }
+
+  // 功能：iOS 13+ 的 devicemotion 必须用户授权——把申请动作挂在首次点击上；
+  //       其他浏览器没有 requestPermission 方法，直接跳过
+  document.addEventListener("click", function zym_ask() {
+    if (typeof DeviceMotionEvent !== "undefined" &&
+        typeof DeviceMotionEvent.requestPermission === "function") {
+      DeviceMotionEvent.requestPermission()
+        .then(function (zym_r) {
+          if (zym_r === "granted") zym_state.textContent = "传感器已授权，摇一摇试试 📳";
+        })
+        .catch(function () { zym_fallback(); });
+    }
+    document.removeEventListener("click", zym_ask);
+  });
+
+  // 功能：监听 devicemotion（需求②）——取 accelerationIncludingGravity 求合成加速度，
+  //       超过阈值 18 判定为摇动；1.5 秒冷却内忽略，防止一次摇动连续触发多次（需求③）
+  window.addEventListener("devicemotion", function (zym_e) {
+    var zym_g = zym_e.accelerationIncludingGravity;
+    if (!zym_g || zym_g.x === null) return;      // 有事件但没数据：视为不可用
+
+    if (!zym_sensorOk) {
+      // 第一次拿到有效数据：传感器确认可用，撤销降级 UI（如果有）
+      zym_sensorOk = true;
+      zym_state.textContent = "传感器就绪，摇一摇手机试试 📳";
+      zym_btn.classList.remove("zym_show");
+    }
+
+    // 合成加速度 = 三轴平方和开根号（静止平放时约等于重力 9.8，摇动时会冲高）
+    var zym_mag = Math.sqrt(zym_g.x * zym_g.x + zym_g.y * zym_g.y + zym_g.z * zym_g.z);
+    // 实时读数：摇动时数字跳动说明传感器通了，一直 ~9.8 说明事件被浏览器屏蔽
+    zym_live.textContent = "实时加速度：" + zym_mag.toFixed(1) + "（阈值 18）";
+    if (zym_mag > 18 && Date.now() - zym_lastShake > 1500) {
+      zym_lastShake = Date.now();   // 记录触发时间，进入 1.5s 冷却
+      zym_draw();                   // 抽菜 + 弹出动画
+    }
+  });
+
+  // 功能：降级检测——打开页面 1.2 秒内没收到任何有效传感器数据，
+  //       就判定当前环境不支持，切换到按钮抽取（需求⑤）
+  setTimeout(function () {
+    if (!zym_sensorOk) zym_fallback();
+  }, 1200);
+
+  // 功能：降级方案的"点我抽一次"按钮——同样走随机抽菜逻辑（需求⑤）
+  zym_btn.addEventListener("click", zym_draw);
+})();
+</script>
+</body>
+</html>

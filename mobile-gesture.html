@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>移动端手势 · 左右滑动切换美食卡片</title>
+<!--
+  作者：赵予萌　学号：219
+  建立时间：2026-11-18 00:00:00
+  使用大模型：GLM-5.3-Flash
+  功能名称：移动端手势页面（touchstart/touchend 左右滑动切换 4 道菜卡片，40px 阈值 + 300ms 冷却）
+-->
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    background:#111827;color:#1f2937;
+    padding:0 18px 40px;              /* 移动端窄边距，页面本身可纵向滚动 */
+  }
+  .zym_wrap{max-width:480px;margin:0 auto}
+
+  /* 顶部标题 */
+  .zym_head{color:#fff;padding:28px 4px 18px}
+  .zym_head .zym_badge{display:inline-block;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);font-size:12px;letter-spacing:2px;margin-bottom:10px}
+  .zym_head h1{font-size:21px;letter-spacing:1px}
+  .zym_head p{margin-top:6px;font-size:13px;color:#9ca3af;line-height:1.9}
+
+  /* 卡片舞台：touch-action:pan-y 只放行纵向手势给浏览器，
+     横向滑动手势交给 JS 处理，页面纵向滚动不受影响（需求④） */
+  .zym_stage{
+    position:relative;height:420px;
+    touch-action:pan-y;               /* 需求④ */
+    border-radius:20px;
+  }
+  /* 4 张卡片叠放在同一位置，用透明度+位移过渡实现切换（需求⑤ 0.3s） */
+  .zym_card{
+    position:absolute;inset:0;
+    border-radius:20px;padding:26px 24px;
+    color:#fff;display:flex;flex-direction:column;justify-content:flex-end;
+    opacity:0;visibility:hidden;
+    transform:translateX(0);
+    transition:transform .3s ease,opacity .3s ease,visibility .3s;
+    box-shadow:0 14px 30px rgba(0,0,0,.35);
+    user-select:none;-webkit-user-select:none;
+  }
+  .zym_on{opacity:1;visibility:visible;z-index:2}
+  .zym_card .zym_emoji{font-size:52px;line-height:1;margin-bottom:auto}
+  .zym_card h2{font-size:24px;letter-spacing:2px}
+  .zym_card h2::before{content:"《"}
+  .zym_card h2::after{content:"》"}
+  .zym_card p{margin-top:10px;font-size:14px;line-height:2;color:rgba(255,255,255,.92)}
+
+  /* 四道菜的渐变背景（需求①） */
+  .zym_c1{background:linear-gradient(135deg,#f97316,#ef4444)}
+  .zym_c2{background:linear-gradient(135deg,#facc15,#f59e0b)}
+  .zym_c3{background:linear-gradient(135deg,#e11d48,#9f1239)}
+  .zym_c4{background:linear-gradient(135deg,#059669,#065f46)}
+
+  /* 底部计数器与提示文字（需求①③） */
+  .zym_counter{text-align:center;color:#e5e7eb;font-size:14px;letter-spacing:2px;margin-top:16px}
+  .zym_hint{text-align:center;font-size:13px;color:#fbbf24;margin-top:8px;min-height:20px;opacity:0;transition:opacity .25s}
+  .zym_hint.zym_show{opacity:1}
+
+  .zym_back{text-align:center;margin-top:26px}
+  .zym_back a{display:inline-block;text-decoration:none;color:#e5e7eb;font-size:14px;font-weight:bold;background:#1f2937;border:1px solid #374151;border-radius:999px;padding:9px 22px;margin:0 6px}
+  .zym_back a:hover{border-color:#6b7280}
+</style>
+</head>
+<body>
+<div class="zym_wrap">
+  <div class="zym_head">
+    <span class="zym_badge">T O U C H · 移 动 端 手 势</span>
+    <h1>👋 左右滑动切换美食卡片</h1>
+    <p>手机上（或浏览器 F12 手机模拟 + 鼠标拖动）左右滑动试试：左滑下一张、右滑上一张，页面纵向仍可正常滚动。</p>
+  </div>
+
+  <!-- 卡片舞台：横向手势由 JS 监听（需求②） -->
+  <div class="zym_stage" id="zym_stage">
+    <div class="zym_card zym_c1 zym_on">
+      <span class="zym_emoji">🍗</span>
+      <h2>宫保鸡丁</h2>
+      <p>川菜经典，鸡肉滑嫩配酥脆花生，酸甜微辣，糊辣荔枝味一菜两面。</p>
+    </div>
+    <div class="zym_card zym_c2">
+      <span class="zym_emoji">🌶️</span>
+      <h2>麻婆豆腐</h2>
+      <p>麻、辣、烫、香、酥、嫩、鲜、活八字真言，豆腐嫩而不碎，红油亮泽。</p>
+    </div>
+    <div class="zym_card zym_c3">
+      <span class="zym_emoji">🍖</span>
+      <h2>东坡肉</h2>
+      <p>慢火细炖四小时，皮薄肉酥、色泽红亮，入口肥而不腻，宋代流传至今。</p>
+    </div>
+    <div class="zym_card zym_c4">
+      <span class="zym_emoji">🦐</span>
+      <h2>白灼基围虾</h2>
+      <p>粤菜本味之道，沸水快灼三十秒，蘸姜葱豉油，鲜甜弹牙。</p>
+    </div>
+  </div>
+
+  <p class="zym_counter" id="zym_counter">第 1/4 张</p>
+  <p class="zym_hint" id="zym_hint"></p>
+
+  <div class="zym_back">
+    <a href="index.html">返回首页</a>
+  </div>
+</div>
+
+<script>
+// 功能：初始化手势切换模块——绑定 touchstart/touchend，处理滑动方向判断、
+//       卡片切换动画、边界提示与 300ms 冷却
+(function () {
+  var zym_stage   = document.getElementById("zym_stage");
+  var zym_cards   = document.querySelectorAll(".zym_card");
+  var zym_counter = document.getElementById("zym_counter");
+  var zym_hint    = document.getElementById("zym_hint");
+  var zym_total   = zym_cards.length;   // 共 4 张
+  var zym_idx     = 0;                  // 当前显示的卡片下标
+  var zym_startX  = 0;                  // touchstart 起点横坐标
+  var zym_startY  = 0;                  // touchstart 起点纵坐标
+  var zym_cool    = 0;                  // 上一次成功切换的时间戳（300ms 冷却用）
+
+  // 功能：切换到下标为 zym_new 的卡片，zym_dir 为 "next"/"prev"，决定滑出滑入方向
+  function zym_switch(zym_new, zym_dir) {
+    var zym_old = zym_cards[zym_idx];
+    var zym_card = zym_cards[zym_new];
+    // 旧卡向滑动方向滑出
+    zym_old.classList.remove("zym_on");
+    zym_old.style.transform = "translateX(" + (zym_dir === "next" ? "-60%" : "60%") + ")";
+    // 新卡先无动画摆到另一侧，再强制回流后触发 0.3s 过渡滑入
+    zym_card.style.transition = "none";
+    zym_card.style.transform = "translateX(" + (zym_dir === "next" ? "60%" : "-60%") + ")";
+    void zym_card.offsetWidth;
+    zym_card.style.transition = "";
+    zym_card.style.transform = "translateX(0)";
+    zym_card.classList.add("zym_on");
+    // 让刚滑出的旧卡恢复待命位（下次再进场）
+    setTimeout(function () { zym_old.style.transform = "translateX(0)"; }, 300);
+    zym_idx = zym_new;
+    zym_counter.textContent = "第 " + (zym_idx + 1) + "/" + zym_total + " 张";  // 需求①计数
+  }
+
+  // 功能：边界提示——显示"已经是第一张/最后一张"1 秒后淡出（需求③）
+  var zym_timer = null;
+  function zym_toast(zym_msg) {
+    zym_hint.textContent = zym_msg;
+    zym_hint.classList.add("zym_show");
+    clearTimeout(zym_timer);
+    zym_timer = setTimeout(function () { zym_hint.classList.remove("zym_show"); }, 1000);
+  }
+
+  // 功能：记录触摸起点坐标（取 changedTouches[0]）
+  zym_stage.addEventListener("touchstart", function (zym_e) {
+    zym_startX = zym_e.changedTouches[0].clientX;
+    zym_startY = zym_e.changedTouches[0].clientY;
+  }, { passive: true });
+
+  // 功能：触摸结束时计算横向位移并判断滑动方向——
+  //       位移超过 40px 才生效；左滑下一张、右滑上一张；
+  //       到达边界时提示；300ms 冷却内忽略，防止一次连滑跳两张
+  zym_stage.addEventListener("touchend", function (zym_e) {
+    var zym_dx = zym_e.changedTouches[0].clientX - zym_startX;   // 横向位移（需求②）
+    var zym_dy = zym_e.changedTouches[0].clientY - zym_startY;
+    if (Math.abs(zym_dx) < 40 || Math.abs(zym_dx) < Math.abs(zym_dy)) return;  // 阈值 40px 且横向为主
+    if (Date.now() - zym_cool < 300) return;                    // 300ms 冷却（需求⑤）
+    zym_cool = Date.now();
+
+    if (zym_dx < 0) {                                           // 手指左滑 → 下一张
+      if (zym_idx < zym_total - 1) zym_switch(zym_idx + 1, "next");
+      else zym_toast("已经是最后一张");
+    } else {                                                    // 手指右滑 → 上一张
+      if (zym_idx > 0) zym_switch(zym_idx - 1, "prev");
+      else zym_toast("已经是第一张");
+    }
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>
